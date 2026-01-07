@@ -37,6 +37,10 @@ public class Deck {
     public static Card chooseRandomCard(List<Card> deck) {
         Random randomGenerator = new Random();
         int randomNumber = randomGenerator.nextInt(deck.size());
-        return deck.get(randomNumber);
+        return deck.remove(randomNumber);
+    }
+
+    public static boolean cardNumberCheck(Card card, Card nextCard) {
+        return nextCard.getCardValue() > card.getCardValue();
     }
 }
