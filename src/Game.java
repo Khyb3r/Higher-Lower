@@ -1,7 +1,4 @@
-    import java.io.File;
-    import java.io.FileNotFoundException;
-    import java.io.FileWriter;
-    import java.io.IOException;
+    import java.io.*;
     import java.util.Collections;
     import java.util.HashMap;
     import java.util.List;
@@ -9,31 +6,30 @@
 
     public class Game {
         private List<Card> deck;
-        private Scanner scanner;
+        private final Scanner scanner;
         private int score;
         private GameMode mode;
         private boolean gameRunning;
-        /*private static File gameStats = new File("gamestats.txt");
-        private static FileWriter fileWriter;
-        //private Scanner fileScanner = new Scanner(gameStats);
-        static {;
-            try {
-                fileWriter = new FileWriter(gameStats.getPath());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }*/
+        private final File gameStats = new File("../gamestats.txt");
 
         public enum GameMode {
             START_SCREEN, PLAYING, RULES, CONTROLS, STATS;
         }
 
-        public Game() throws FileNotFoundException {
+        public Game() throws IOException {
             this.deck = Deck.createDeck();
             this.scanner = new Scanner(System.in);
             this.gameRunning = true;
             this.mode = GameMode.START_SCREEN;
             this.score = 0;
+
+            if (!gameStats.exists()) {
+                boolean f = gameStats.createNewFile();
+                try (FileWriter fileWriter = new FileWriter(gameStats)){
+                    fileWriter.write("Highest score is: 0");
+                }
+                catch (Exception e) {e.printStackTrace();}
+            }
         }
 
         public void run() {
@@ -80,7 +76,7 @@
                             // game start
                             if (card == null) {
                                 card = Deck.chooseRandomCard(deck);
-                                printCurrentCard(card);
+                                //printCurrentCard(card);
                             }
                             break;
 
@@ -94,14 +90,21 @@
 
                         case "B":
                             mode = GameMode.START_SCREEN;
-                            card = null;
                             break;
 
                         case "Q":
                             gameRunning = false;
                             break;
+
+                        case "N":
+                            card = null;
+                            score = 0;
+                            this.deck = Deck.createDeck();
+                            Collections.shuffle(this.deck);
+                            break;
                         default:
                             System.out.println("Invalid input, try again");
+                            System.out.flush();
                             break;
                     }
                 }
@@ -113,8 +116,7 @@
         }
 
         private Card playCard(Card currCard, boolean higherGuessed) {
-            Card nextCard = Deck.chooseRandomCard(deck);
-            //printCurrentCard(currCard);
+            Card nextCard = pickCard();
 
             boolean isHigher = Deck.cardNumberCheck(currCard, nextCard);
             boolean correct = (isHigher && higherGuessed) || (!isHigher && !higherGuessed);
@@ -127,11 +129,37 @@
                 System.out.println("WRONG");
             }
             // shuffle deck
-            Collections.shuffle(deck);
-            System.out.print("Press Enter to continue: ");
-            scanner.nextLine();
+            Collections.shuffle(this.deck);
+            if (score > fileMaxScore()) saveScore(score);
+            System.out.println("Press Enter to continue: ");
+            for (;;) {
+                String continueInput = scanner.nextLine().trim().toUpperCase();
+                if (continueInput.equals("N")) {
+                    mode = GameMode.START_SCREEN;
+                    nextCard = null;
+                    break;
+                } else if (continueInput.equals("B")) {
+                    mode = GameMode.START_SCREEN;
+                    break;
+                } else if (continueInput.equals("Q")) {
+                    gameRunning = false;
+                    break;
+                } else if (continueInput.isEmpty()) {
+                    break;
+                }
+                clearScreen();
+                System.out.println("Try again: ");
+                System.out.println("Press Enter to continue: ");
+            }
             return nextCard;
+        }
 
+        private Card pickCard() {
+            if (this.deck.isEmpty()) {
+                this.deck = Deck.createDeck();
+                Collections.shuffle(this.deck);
+            }
+            return Deck.chooseRandomCard(this.deck);
         }
 
         private void printCurrentCard(Card card) {
@@ -162,7 +190,8 @@
         private void gameScreen(Card card) {
             if (card == null) {
                 System.out.println("Type Start and Press Enter to Begin");
-                System.out.println("Press B and Enter to go back to Main Menu");
+                System.out.println("Press B and Enter to pause current game");
+                System.out.println("Press N to abandon current game and create new game");
                 System.out.println("Press Q to Quit");
             }
             else  {
@@ -191,5 +220,31 @@
         }
         private void statsScreen() {
             // display stats of the game
+            System.out.println("Highest score is: " + fileMaxScore());
+            System.out.println("Score currently is: " + score);
+        }
+
+        private void saveScore(int currScore) {
+            try (FileWriter fileWriter = new FileWriter(gameStats, false)){
+                fileWriter.write("Highest score is: " + currScore);
+                fileWriter.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private int fileMaxScore() {
+            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(gameStats))){
+                String line = bufferedReader.readLine();
+                String[] splitLine = line.split(":");
+                return Integer.parseInt(splitLine[1].trim());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void drawDeckSize() {
+            String deckSize = String.valueOf(this.deck.size() - 1);
+            System.out.println("\t\t\tDeck Size: " + deckSize);
         }
     }

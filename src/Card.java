@@ -13,7 +13,7 @@ public class Card {
     public Card(Suit suitType, Rank rankType, Suit.JokerType jokerType) {
         this.suitType = suitType;
         this.rankType = rankType;
-        this.cardValue = getCardValue();
+        this.cardValue = rankType.getCardNumber();
         this.jokerType = jokerType;
     }
 
