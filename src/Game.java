@@ -13,7 +13,7 @@
         private final File gameStats = new File("../gamestats.txt");
 
         public enum GameMode {
-            START_SCREEN, PLAYING, RULES, CONTROLS, STATS;
+            START_SCREEN, PLAYING, RULES, CONTROLS, STATS, GAME_OVER;
         }
 
         public Game() throws IOException {
@@ -46,6 +46,8 @@
                     rulesScreen();
                 } else if (mode == GameMode.STATS) {
                     statsScreen();
+                } else if (mode == GameMode.GAME_OVER) {
+                    gameOverScreen();
                 }
 
                 String input = scanner.nextLine().trim().toUpperCase();
@@ -68,6 +70,7 @@
                             break;
                         default:
                             System.out.println("Invalid input, try again");
+                            System.out.flush();
                             break;
                     }
                 } else if (mode == GameMode.PLAYING) {
@@ -81,11 +84,11 @@
                             break;
 
                         case "H":
-                            card = playCard(card, true);
+                            if (card != null) card = playCard(card, true);
                             break;
 
                         case "L":
-                            card = playCard(card, false);
+                            if (card != null) card = playCard(card, false);
                             break;
 
                         case "B":
@@ -107,8 +110,29 @@
                             System.out.flush();
                             break;
                     }
-                }
-                else {
+                } else if (mode == GameMode.GAME_OVER) {
+                    switch (input) {
+                        case "N":
+                            score = 0;
+                            this.deck = Deck.createDeck();
+                            Collections.shuffle(this.deck);
+                            mode = GameMode.PLAYING;
+                            break;
+                        case "B":
+                            score = 0;
+                            this.deck = Deck.createDeck();
+                            Collections.shuffle(this.deck);
+                            mode = GameMode.START_SCREEN;
+                            break;
+                        case "Q":
+                            gameRunning = false;
+                            break;
+                        default:
+                            System.out.println("Invalid input, try again");
+                            System.out.flush();
+                            break;
+                    }
+                } else {
                     mode = GameMode.START_SCREEN;
                 }
 
@@ -120,7 +144,7 @@
 
             boolean isHigher = Deck.cardNumberCheck(currCard, nextCard);
             boolean correct = (isHigher && higherGuessed) || (!isHigher && !higherGuessed);
-
+            System.out.println();
             if (correct) {
                 score++;
                 System.out.println("CORRECT");
@@ -131,8 +155,12 @@
             // shuffle deck
             Collections.shuffle(this.deck);
             if (score > fileMaxScore()) saveScore(score);
+            if (this.deck.isEmpty()) {
+                mode = GameMode.GAME_OVER;
+                return null;
+            }
             System.out.println("Press Enter to continue: ");
-            for (;;) {
+            while (true) {
                 String continueInput = scanner.nextLine().trim().toUpperCase();
                 if (continueInput.equals("N")) {
                     mode = GameMode.START_SCREEN;
@@ -156,8 +184,7 @@
 
         private Card pickCard() {
             if (this.deck.isEmpty()) {
-                this.deck = Deck.createDeck();
-                Collections.shuffle(this.deck);
+                return null;
             }
             return Deck.chooseRandomCard(this.deck);
         }
@@ -167,8 +194,9 @@
                 System.out.print("Card is: " + card.getJokerType() + " " + card.getSuitType());
             }
             else {
-                System.out.println("Card is: " + card.getRankType() + " of " + card.getSuitType());
+                System.out.print("Card is: " + card.getRankType() + " of " + card.getSuitType());
             }
+            System.out.println("\t\t\t\t\t\t\t\tDeck Size: " + this.deck.size());
             System.out.println();
         }
 
@@ -222,6 +250,13 @@
             // display stats of the game
             System.out.println("Highest score is: " + fileMaxScore());
             System.out.println("Score currently is: " + score);
+        }
+
+        private void gameOverScreen() {
+            clearScreen();
+            System.out.println("GAME OVER");
+            System.out.println("Score was: " + score);
+            System.out.println("Press N for New Game, B for Main Menu, Q to Quit");
         }
 
         private void saveScore(int currScore) {

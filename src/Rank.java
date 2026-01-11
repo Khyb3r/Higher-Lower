@@ -16,7 +16,7 @@ public enum Rank {
 
     private final int cardNumber;
 
-    Rank(int cardNumber) {
+    private Rank(int cardNumber) {
         this.cardNumber = cardNumber;
     }
     public int getCardNumber() {
