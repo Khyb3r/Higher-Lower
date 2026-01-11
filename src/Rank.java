@@ -1,3 +1,4 @@
+// Each enum value has its corresponding numeric value
 public enum Rank {
     TWO(2),
     THREE(3),

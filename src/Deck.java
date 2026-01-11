@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class Deck {
     private final List<Card> deck;
@@ -10,6 +9,8 @@ public class Deck {
     }
     public static List<Card> createDeck() {
         List<Card> deck = new ArrayList<>();
+
+        // Add all Cards to deck excluding jokers
         for (Suit suit : Suit.values()) {
             if (suit.equals(Suit.JOKER)) continue;
             for (Rank rank : Rank.values()) {
@@ -17,7 +18,8 @@ public class Deck {
                 deck.add(new Card(suit, rank));
             }
         }
-        // add jokers
+
+        // Manually add jokers to deck as they have their own Card constructor
         deck.add(new Card(Suit.JOKER, Rank.JOKER, Suit.JokerType.BLACK));
         deck.add(new Card(Suit.JOKER, Rank.JOKER, Suit.JokerType.RED));
         return deck;
@@ -34,12 +36,12 @@ public class Deck {
         return deck;
     }
 
-    public static Card chooseRandomCard(List<Card> deck) {
-        Random randomGenerator = new Random();
-        int randomNumber = randomGenerator.nextInt(deck.size());
-        return deck.remove(randomNumber);
+    // Pick card from top/end of deck and remove
+    public static Card chooseCard(List<Card> deck) {
+        return deck.removeLast();
     }
 
+    // Returns true if nextCard in deck is higher in value than current, otherwise false
     public static boolean cardNumberCheck(Card card, Card nextCard) {
         return nextCard.getCardValue() > card.getCardValue();
     }

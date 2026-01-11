@@ -1,6 +1,5 @@
     import java.io.*;
     import java.util.Collections;
-    import java.util.HashMap;
     import java.util.List;
     import java.util.Scanner;
 
@@ -8,21 +7,36 @@
         private List<Card> deck;
         private final Scanner scanner;
         private int score;
+        private int wrongGuessesRow;
         private GameMode mode;
         private boolean gameRunning;
+
+        // creates file for storing high score in directory above src
         private final File gameStats = new File("../gamestats.txt");
 
+        // ANSI escape codes for colours etc.
+        public static final String RED = "\033[91m";
+        public static final String CYAN_BLUE = "\033[96m";
+        public static final String GREEN = "\033[92m";
+        public static final String YELLOW = "\033[93m";
+        public static final String RESET = "\033[0m";
+        public static final String BOLD = "\033[1m";
+
+        // Different states game can be in (used for rendering specific screen)
         public enum GameMode {
             START_SCREEN, PLAYING, RULES, CONTROLS, STATS, GAME_OVER;
         }
 
+        // file handling causes IOException
         public Game() throws IOException {
             this.deck = Deck.createDeck();
             this.scanner = new Scanner(System.in);
             this.gameRunning = true;
             this.mode = GameMode.START_SCREEN;
             this.score = 0;
+            this.wrongGuessesRow = 0;
 
+            // create file if it doesn't exist and set with dummy/initial value
             if (!gameStats.exists()) {
                 boolean f = gameStats.createNewFile();
                 try (FileWriter fileWriter = new FileWriter(gameStats)){
@@ -32,25 +46,32 @@
             }
         }
 
+        // Starts the Game
         public void run() {
             Card card = null;
+            // Main Game Loop
             while (gameRunning) {
-                clearScreen();
+                Screen.clearScreen();
+                // Render different screen depending on current mode
                 if (mode == GameMode.START_SCREEN) {
-                    menuScreen();
+                    Screen.menuScreen();
                 } else if (mode == GameMode.PLAYING) {
                     gameScreen(card);
                 } else if (mode == GameMode.CONTROLS) {
-                    controlsScreen();
+                    Screen.controlsScreen();
                 } else if (mode == GameMode.RULES) {
-                    rulesScreen();
+                    Screen.rulesScreen();
                 } else if (mode == GameMode.STATS) {
                     statsScreen();
                 } else if (mode == GameMode.GAME_OVER) {
-                    gameOverScreen();
+                    Screen.gameOverScreen(this.score);
                 }
 
+                // User inputs differ depending on what screen they are on only for
+                // start_screen/Home, Playing screen and Game Over Screen
                 String input = scanner.nextLine().trim().toUpperCase();
+
+                // Navigate to other screens other than home/start
                 if (mode == GameMode.START_SCREEN) {
                     switch (input) {
                         case "P":
@@ -73,58 +94,78 @@
                             System.out.flush();
                             break;
                     }
-                } else if (mode == GameMode.PLAYING) {
+                }
+                // Input for Playing mode
+                else if (mode == GameMode.PLAYING) {
                     switch (input) {
+                        // game start
                         case "START":
-                            // game start
+                            // if first run/new game card is null
+                            // so shuffle the deck and choose the card from the top
                             if (card == null) {
-                                card = Deck.chooseRandomCard(deck);
-                                //printCurrentCard(card);
+                                Collections.shuffle(deck);
+                                card = Deck.chooseCard(deck);
                             }
                             break;
-
                         case "H":
+                            // User guessed higher -> update card with next card
                             if (card != null) card = playCard(card, true);
                             break;
 
                         case "L":
+                            // User guessed lower -> update card with next card
                             if (card != null) card = playCard(card, false);
                             break;
 
                         case "B":
+                            // Go back to home/start screen
                             mode = GameMode.START_SCREEN;
                             break;
 
                         case "Q":
+                            // quit application -> ends game loop
                             gameRunning = false;
                             break;
 
                         case "N":
+                            // new game, reset state of game (card, deck, score, reshuffle)
                             card = null;
                             score = 0;
                             this.deck = Deck.createDeck();
                             Collections.shuffle(this.deck);
                             break;
+
                         default:
                             System.out.println("Invalid input, try again");
                             System.out.flush();
                             break;
                     }
-                } else if (mode == GameMode.GAME_OVER) {
+                }
+                // input when game/current round is over (no cards remaining in the deck)
+                else if (mode == GameMode.GAME_OVER) {
                     switch (input) {
                         case "N":
+                            // reset all game state (score, create a new deck and reshuffle)
+                            // set the mode back to playing and begins new game/round
                             score = 0;
                             this.deck = Deck.createDeck();
                             Collections.shuffle(this.deck);
                             mode = GameMode.PLAYING;
                             break;
+
+                        // back to home screen
                         case "B":
+                            // reset all game state (score, create a new deck and reshuffle)
+                            // set mode to start screen
                             score = 0;
                             this.deck = Deck.createDeck();
                             Collections.shuffle(this.deck);
                             mode = GameMode.START_SCREEN;
                             break;
+
+
                         case "Q":
+                            // quit entire game
                             gameRunning = false;
                             break;
                         default:
@@ -132,33 +173,56 @@
                             System.out.flush();
                             break;
                     }
-                } else {
+                }
+                // any other screen any input returns you to the home screen
+                // (those screens are essentially read only)
+                else {
                     mode = GameMode.START_SCREEN;
                 }
 
             }
         }
 
+        // guess whether the next card is higher/lower than the current card
+        // updates score and returns the next card back to main game loop so it is stored
         private Card playCard(Card currCard, boolean higherGuessed) {
             Card nextCard = pickCard();
 
+            // Check whether card was correctly guesses higher/lower
             boolean isHigher = Deck.cardNumberCheck(currCard, nextCard);
             boolean correct = (isHigher && higherGuessed) || (!isHigher && !higherGuessed);
             System.out.println();
+
+
             if (correct) {
                 score++;
-                System.out.println("CORRECT");
+                // reset as consecutive wrong guesses is broken
+                wrongGuessesRow = 0;
+                System.out.println(GREEN + "CORRECT" + RESET);
             }
             else {
-                System.out.println("WRONG");
+                wrongGuessesRow++;
+                System.out.println(RED + "WRONG" + RESET);
             }
-            // shuffle deck
-            Collections.shuffle(this.deck);
+
+            // 3 consecutive wrong guesses -> deduct a point
+            if (wrongGuessesRow == 3) {
+                score--;
+                wrongGuessesRow = 0;
+            }
+
+            // update file storing max score only if current score is higher
+            // avoids overhead of writing even if score wasn't higher
             if (score > fileMaxScore()) saveScore(score);
+
+            // end of this current round (no more cards left in deck)
             if (this.deck.isEmpty()) {
                 mode = GameMode.GAME_OVER;
                 return null;
             }
+
+            // User input on whether to continue, quit, go back, start new game
+            // keep asking for input until one of the following inputted
             System.out.println("Press Enter to continue: ");
             while (true) {
                 String continueInput = scanner.nextLine().trim().toUpperCase();
@@ -175,7 +239,7 @@
                 } else if (continueInput.isEmpty()) {
                     break;
                 }
-                clearScreen();
+                Screen.clearScreen();
                 System.out.println("Try again: ");
                 System.out.println("Press Enter to continue: ");
             }
@@ -186,79 +250,50 @@
             if (this.deck.isEmpty()) {
                 return null;
             }
-            return Deck.chooseRandomCard(this.deck);
+            return Deck.chooseCard(this.deck);
         }
 
+        // Displays the current card to the user, joker cards are displayed slightly differently
+        // also displays current deck size to user so they know how much of the current round is left
         private void printCurrentCard(Card card) {
             if (card.getSuitType() == Suit.JOKER) {
-                System.out.print("Card is: " + card.getJokerType() + " " + card.getSuitType());
+                System.out.print("Card is: " + BOLD + CYAN_BLUE +  card.getJokerType() + " " + card.getSuitType() + RESET);
             }
             else {
-                System.out.print("Card is: " + card.getRankType() + " of " + card.getSuitType());
+                System.out.print("Card is: " + BOLD + CYAN_BLUE + card.getRankType() + " of " + card.getSuitType() + RESET);
             }
-            System.out.println("\t\t\t\t\t\t\t\tDeck Size: " + this.deck.size());
+            System.out.println("\t\t\t\t\t\tDeck Size: " + YELLOW + this.deck.size() + RESET);
             System.out.println();
         }
 
-        private void clearScreen() {
-            // ANSI escape code for clearing screen and cursoring to top left of terminal
-            System.out.print("\033[H\033[2J");
-            System.out.flush();
-        }
-
-        private void menuScreen() {
-            System.out.println("HIGHER OR LOWER");
-            System.out.println("Press R and Enter for How to Play");
-            System.out.println("Press C and Enter for Controls");
-            System.out.println("Press S for Game Stats");
-            System.out.println("Press P and Enter to Play");
-            System.out.println("Press Q and Enter to Quit");
-            System.out.flush();
-        }
+        // Displays before actually beginning the Game
+        // This display is not in the Screen class as it requires some stateful information of the game
         private void gameScreen(Card card) {
             if (card == null) {
-                System.out.println("Type Start and Press Enter to Begin");
-                System.out.println("Press B and Enter to pause current game");
-                System.out.println("Press N to abandon current game and create new game");
-                System.out.println("Press Q to Quit");
+                System.out.println(CYAN_BLUE + BOLD + "PLAY" + RESET);
+                System.out.println("Start and Enter to Begin");
+                System.out.println("B and Enter to pause current game");
+                System.out.println("N and Enter to abandon current game and create new game");
+                System.out.println("Q and Enter to Quit");
             }
             else  {
                 printCurrentCard(card);
-                System.out.println("Higher or Lower? : ");
+                System.out.println("Higher or Lower ? ");
             }
+            System.out.println();
             System.out.flush();
         }
 
-        private void controlsScreen() {
-            System.out.println("H for Higher");
-            System.out.println("L for Lower");
-            System.out.flush();
-        }
-        private void rulesScreen() {
-            // drop points per 3 consecutive incorrect guesses
-            System.out.println("You must guess whether the next card in the deck will be higher or lower than your current card");
-            System.out.println("You will lose points for 3 consecutive incorrect guesses");
-            System.out.println("Card's are ranked by their numerical values.");
-            System.out.println("Jack's have value 11.");
-            System.out.println("Queen's have value 12.");
-            System.out.println("King's have value 13");
-            System.out.println("Ace's have value 14");
-            System.out.println("Jokers have value 15");
-            System.out.flush();
-        }
+        // Displays the current score and highest score which it reads from gamestats.txt.
+        // This display is not in the Screen class as it requires some stateful information of the game
         private void statsScreen() {
-            // display stats of the game
-            System.out.println("Highest score is: " + fileMaxScore());
-            System.out.println("Score currently is: " + score);
+            System.out.println(YELLOW + BOLD + "GAME STATS" + RESET);
+            System.out.println("Highest score is: " + GREEN + fileMaxScore() + RESET);
+            System.out.println("Score currently is: " + CYAN_BLUE + score + RESET);
+            System.out.println();
         }
 
-        private void gameOverScreen() {
-            clearScreen();
-            System.out.println("GAME OVER");
-            System.out.println("Score was: " + score);
-            System.out.println("Press N for New Game, B for Main Menu, Q to Quit");
-        }
-
+        // Overwrites the high score in gamestats.txt
         private void saveScore(int currScore) {
             try (FileWriter fileWriter = new FileWriter(gameStats, false)){
                 fileWriter.write("Highest score is: " + currScore);
@@ -268,6 +303,7 @@
             }
         }
 
+        // Extracts the score from the gamestats.txt file and returns it
         private int fileMaxScore() {
             try (BufferedReader bufferedReader = new BufferedReader(new FileReader(gameStats))){
                 String line = bufferedReader.readLine();
@@ -276,10 +312,5 @@
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        private void drawDeckSize() {
-            String deckSize = String.valueOf(this.deck.size() - 1);
-            System.out.println("\t\t\tDeck Size: " + deckSize);
         }
     }

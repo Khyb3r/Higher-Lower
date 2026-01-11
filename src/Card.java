@@ -1,15 +1,10 @@
-import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
-
 public class Card {
-    // Suit of the card
     private final Suit suitType;
     private final Rank rankType;
     private final int cardValue;
     private final Suit.JokerType jokerType;
 
-
+    // Joker specific Card Constructor
     public Card(Suit suitType, Rank rankType, Suit.JokerType jokerType) {
         this.suitType = suitType;
         this.rankType = rankType;
@@ -17,6 +12,7 @@ public class Card {
         this.jokerType = jokerType;
     }
 
+    // Non-Joker cards Card Constructor
     public Card(Suit suitType, Rank rankType) {
         this(suitType, rankType, null);
     }
