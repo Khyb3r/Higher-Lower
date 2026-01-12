@@ -31,7 +31,7 @@ As well as this, other extensions have also been developed:
  - Persistent handling of scoring across game sessions (gamestats.txt)
  - ANSI terminal colours used to improve UI.
 
-#### Rationale behind certain design decisions
+### Rationale behind certain design decisions
 The idea was to split up each component of the game into its own class/enum representation to keep everything modular.
 Therefore, Card, Suit, Rank and Deck classes/enums were established. The easiest way to manage the numeric value for comparison 
 between cards was by attaching a value to each enum value per Rank. Suits were also split in a standard manner into the 4 types
@@ -41,7 +41,7 @@ the Screen class was created to separate Game logic from the methods that "rende
 some of these displays being stateful (requiring game logic) these screen methods were kept in the Game class to avoid moving things
 like file I/O related objects, therefore allowing for simpler error handling.
 
-#### Refer to the comments within the code for further reasoning behind how/why things work
+### Refer to the comments within the code for further reasoning behind how/why things work
 
 ## Project Improvements
 - Improve logging and error case handling
