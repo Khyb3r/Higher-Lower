@@ -271,10 +271,10 @@
         private void gameScreen(Card card) {
             if (card == null) {
                 System.out.println(CYAN_BLUE + BOLD + "PLAY" + RESET);
-                System.out.println("Start and Enter to Begin");
-                System.out.println("B and Enter to pause current game");
-                System.out.println("N and Enter to abandon current game and create new game");
-                System.out.println("Q and Enter to Quit");
+                System.out.println("Type Start and Enter to Begin");
+                System.out.println("Press B and Enter to pause current game");
+                System.out.println("Press N and Enter to abandon current game and create new game");
+                System.out.println("Press Q and Enter to Quit");
             }
             else  {
                 printCurrentCard(card);
