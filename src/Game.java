@@ -14,7 +14,7 @@
         // creates file for storing high score in directory above src
         private final File gameStats = new File("../gamestats.txt");
 
-        // ANSI escape codes for colours etc.
+        // Standard ANSI escape codes for colours etc.
         public static final String RED = "\033[91m";
         public static final String CYAN_BLUE = "\033[96m";
         public static final String GREEN = "\033[92m";
@@ -24,7 +24,7 @@
 
         // Different states game can be in (used for rendering specific screen)
         public enum GameMode {
-            START_SCREEN, PLAYING, RULES, CONTROLS, STATS, GAME_OVER;
+            START_SCREEN, PLAYING, RULES, CONTROLS, STATS, GAME_OVER
         }
 
         // file handling causes IOException
@@ -254,7 +254,7 @@
         }
 
         // Displays the current card to the user, joker cards are displayed slightly differently
-        // also displays current deck size to user so they know how much of the current round is left
+        // also displays current deck size to user, so they know how much of the current round is left
         private void printCurrentCard(Card card) {
             if (card.getSuitType() == Suit.JOKER) {
                 System.out.print("Card is: " + BOLD + CYAN_BLUE +  card.getJokerType() + " " + card.getSuitType() + RESET);
@@ -262,7 +262,7 @@
             else {
                 System.out.print("Card is: " + BOLD + CYAN_BLUE + card.getRankType() + " of " + card.getSuitType() + RESET);
             }
-            System.out.println("\t\t\t\t\t\tDeck Size: " + YELLOW + this.deck.size() + RESET);
+            System.out.println("\t\t\t\tDeck Size: " + YELLOW + this.deck.size() + RESET);
             System.out.println();
         }
 
@@ -278,7 +278,7 @@
             }
             else  {
                 printCurrentCard(card);
-                System.out.println("Higher or Lower ? ");
+                System.out.println("Higher or Lower? ");
             }
             System.out.println();
             System.out.flush();
